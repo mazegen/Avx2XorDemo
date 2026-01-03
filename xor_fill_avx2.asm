@@ -28,6 +28,26 @@ alphaFF dd 0FF000000h
 
 .code
 fill_xor_bgra_avx2 PROC
+
+    ; ---- preserve nonvolatile regs (GPRs + YMM9..YMM13)
+
+    push rbx
+    push rsi
+    push rdi
+    push r12
+    push r13
+    push r14
+    push r15
+
+    sub  rsp, 160                     ; 5 * 32 bytes for ymm9..ymm13
+    vmovdqu YMMWORD PTR [rsp+  0], ymm9
+    vmovdqu YMMWORD PTR [rsp+ 32], ymm10
+    vmovdqu YMMWORD PTR [rsp+ 64], ymm11
+    vmovdqu YMMWORD PTR [rsp+ 96], ymm12
+    vmovdqu YMMWORD PTR [rsp+128], ymm13
+
+    ; -------------------------------------------------------------
+    
     ; rcx=dst, edx=width, r8d=height, r9d=t
 
     ; Move args to stable registers
@@ -151,6 +171,22 @@ L_finish:
     vzeroupper
 
 L_done:
+    ; ---- restore nonvolatile regs (YMM + GPRs) ----
+    vmovdqu ymm9,  YMMWORD PTR [rsp+  0]
+    vmovdqu ymm10, YMMWORD PTR [rsp+ 32]
+    vmovdqu ymm11, YMMWORD PTR [rsp+ 64]
+    vmovdqu ymm12, YMMWORD PTR [rsp+ 96]
+    vmovdqu ymm13, YMMWORD PTR [rsp+128]
+    add  rsp, 160
+
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rdi
+    pop rsi
+    pop rbx
+
     ret
 fill_xor_bgra_avx2 ENDP
 
